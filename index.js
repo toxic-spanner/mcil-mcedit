@@ -11,8 +11,21 @@ var blockMap = {
 };
 
 exports.export = function(code, dimensions) {
-    var bufferSize = dimensions.width * dimensions.height * dimensions.depth;
 
+    var blocks = [];
+
+    var realWidth = 0, realHeight = 0, realDepth = 0;
+
+    mcil.walk(code, dimensions, function(block) {
+        blocks.push(block);
+        if (block.x + 1 > realWidth) realWidth = block.x + 1;
+        if (block.y + 1 > realHeight) realHeight = block.y + 1;
+        if (block.z + 1 > realDepth) realDepth = block.z + 1;
+    });
+
+    var blockEntities = [];
+
+    var bufferSize = realWidth * realHeight * realDepth;
     var blockIds = new Buffer(bufferSize);
     blockIds.fill(0);
 
@@ -20,11 +33,9 @@ exports.export = function(code, dimensions) {
     blockData.fill(0);
 
     var blockBiomes = new Buffer(bufferSize);
-    blockBiomes.fill(1); // plains biome
+    blockBiomes.fill(1); // plains
 
-    var blockEntities = [];
-
-    mcil.walk(code, dimensions, function(block) {
+    blocks.forEach(function(block) {
         var name = block.name;
         if (name.indexOf("minecraft:") !== 0) name = "minecraft:" + name;
 
@@ -92,15 +103,15 @@ exports.export = function(code, dimensions) {
         value: {
             Width: {
                 type: "short",
-                value: dimensions.width
+                value: realWidth
             },
             Height: {
                 type: "short",
-                value: dimensions.height
+                value: realHeight
             },
             Length: {
                 type: "short",
-                value: dimensions.depth
+                value: realDepth
             },
             Materials: {
                 type: "string",
